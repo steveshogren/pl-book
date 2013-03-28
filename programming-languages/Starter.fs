@@ -38,8 +38,13 @@ let rec interp a =
     | PlusC(l, r) -> interp(l) + interp(r)
     | MultC(l, r) -> interp(l) * interp(r)
 
-let interPrint sub = printfn "%A:\n%A" sub (interp(desugar(sub)))
-let sub = interPrint(MinusS(NumS(4), NumS(5)))
-let urn = interPrint(UMinuS(NumS(4)))
+//let interPrint sub = printfn "%A:\n%A" sub (interp(desugar(sub)))
+let tester (sugar, expected) =
+  printfn "%A:\nexpected: %A\n%A\n" sugar expected (interp(desugar(sugar)))
+  
+tester(PlusS(NumS(4), NumS(5)), 9)
+tester(MinusS(NumS(4), NumS(5)), -1)
+tester(MultS(NumS(4), NumS(5)), 20)
+tester(UMinuS(NumS(4)), -4)
 
 
