@@ -10,20 +10,36 @@ let good animal =
     | Camel(humps) -> humps >= 2
     | Yacc(height) -> height > 2
 //printfn "%A is %A" aCamel (good aCamel)
- 
+
+// Interpreting
+type ArithS =
+  | NumS of int
+  | PlusS of ArithS * ArithS
+  | MinusS of ArithS * ArithS
+  | MultS of ArithS * ArithS
+  | UMinuS of ArithS
+
 type ArithC =
   | NumC of int
   | PlusC of ArithC * ArithC
   | MultC of ArithC * ArithC
 
-let parseList li =
-  li
-let parse s =
-  match System.Int32.TryParse(s) with
-    | (true, n) -> NumC(n)
-    | (false, n) when n.Length > 0 -> parseList n
-    | _ -> failwith "not a ArithC"
+let rec desugar a =
+  match a with
+    | NumS (n) -> NumC (n)
+    | PlusS (l, r) -> PlusC (desugar l, desugar r )
+    | MinusS (l, r) -> PlusC (desugar l, (MultC(NumC(-1), desugar(r))))
+    | MultS (l, r) -> MultC (desugar l, desugar r )
+    | UMinuS (n) -> MultC(NumC(-1), desugar n )
 
-printfn "Parse 4: %A" (parse("4"))
-printfn "ArithC %A" (parse("[+; 2; 4]"))
+let rec interp a =
+  match a with 
+    | NumC(n) -> n
+    | PlusC(l, r) -> interp(l) + interp(r)
+    | MultC(l, r) -> interp(l) * interp(r)
+
+let interPrint sub = printfn "%A:\n%A" sub (interp(desugar(sub)))
+let sub = interPrint(MinusS(NumS(4), NumS(5)))
+let urn = interPrint(UMinuS(NumS(4)))
+
 
