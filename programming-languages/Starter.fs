@@ -19,10 +19,15 @@ type ArithS =
   | MultS of ArithS * ArithS
   | UMinuS of ArithS
 
-type ArithC =
+type ExprC =
   | NumC of int
-  | PlusC of ArithC * ArithC
-  | MultC of ArithC * ArithC
+  | IdC of string
+  | AppC of string * ExprC
+  | PlusC of ExprC * ExprC
+  | MultC of ExprC * ExprC
+
+type FunDefC =
+  | Fdc of string * string * ExprC
 
 let rec desugar a =
   match a with
@@ -32,15 +37,24 @@ let rec desugar a =
     | MultS (l, r) -> MultC (desugar l, desugar r )
     | UMinuS (n) -> MultC(NumC(-1), desugar n )
 
-let rec interp a =
+let rec subs whatC (forS : string) inC =
+  match inC with
+    | NumC (n) -> inC
+    | IdC (s) -> if s = forS then whatC else inC
+    | AppC (f, a) -> AppC (f, subs whatC forS a)
+    | PlusC (l, r) -> PlusC (subs whatC forS l, subs whatC forS r)
+    | MultC (l, r) -> MultC (subs whatC forS l, subs whatC forS r)
+
+let rec interp (a : ExprC) fds =
   match a with 
     | NumC(n) -> n
-    | PlusC(l, r) -> interp(l) + interp(r)
-    | MultC(l, r) -> interp(l) * interp(r)
+    | PlusC(l, r) -> interp(l fds) + interp(r fds)
+    | MultC(l, r) -> interp(l fds) * interp(r fds)
+    | _ -> 0
 
 //let interPrint sub = printfn "%A:\n%A" sub (interp(desugar(sub)))
 let tester (sugar, expected) =
-  printfn "%A:\nexpected: %A\n%A\n" sugar expected (interp(desugar(sugar)))
+  printfn "%A:\nexpected: %A\n%A\n" sugar expected (interp (desugar sugar) 1)
   
 tester(PlusS(NumS(4), NumS(5)), 9)
 tester(MinusS(NumS(4), NumS(5)), -1)
