@@ -45,16 +45,18 @@ let rec subs whatC (forS : string) inC =
     | PlusC (l, r) -> PlusC (subs whatC forS l, subs whatC forS r)
     | MultC (l, r) -> MultC (subs whatC forS l, subs whatC forS r)
 
-let rec interp (a : ExprC) fds =
+let rec interp a fds =
   match a with 
     | NumC(n) -> n
-    | PlusC(l, r) -> interp(l fds) + interp(r fds)
-    | MultC(l, r) -> interp(l fds) * interp(r fds)
+    | PlusC(l, r) -> interp l fds + interp r fds 
+    | MultC(l, r) -> interp l fds * interp r fds 
     | _ -> 0
 
-//let interPrint sub = printfn "%A:\n%A" sub (interp(desugar(sub)))
 let tester (sugar, expected) =
-  printfn "%A:\nexpected: %A\n%A\n" sugar expected (interp (desugar sugar) 1)
+  let wrung = interp (desugar sugar) []
+  if expected = wrung then 
+    printf "."
+  else printfn "%A:\nexpected: %A\n%A\n" sugar expected wrung
   
 tester(PlusS(NumS(4), NumS(5)), 9)
 tester(MinusS(NumS(4), NumS(5)), -1)
