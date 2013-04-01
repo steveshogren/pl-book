@@ -10,9 +10,14 @@ type ArithS =
 type ExprC =
   | NumC of int
   | IdC of string
-  | AppC of string * ExprC
+  | AppC of ExprC * ExprC
   | PlusC of ExprC * ExprC
   | MultC of ExprC * ExprC
+  | Fdc of string * string * ExprC
+
+type Value =
+  | NumV of int
+  | FunV of string * string * ExprC
 
 type FunDefC =
   | Fdc of string * string * ExprC
@@ -56,6 +61,7 @@ let rec interp a (env : Binding list) (fds : FunDefC list)  =
     | PlusC(l, r) -> interp l env fds + interp r env fds 
     | MultC(l, r) -> interp l env fds * interp r env fds 
     | IdC(n) -> lookup n env
+    | Fdc(n, a, b) -> expr
     | AppC (f, a) ->
       match getFundef f fds with
         | Some (Fdc(fdcName, fdcArg, fdcBody)) -> 
