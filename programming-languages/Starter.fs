@@ -1,16 +1,5 @@
 module Starter
 
-type MispelledAnimal =
-  | Yacc of int
-  | Camel of int
-
-let aCamel = Camel(5)
-let good animal =
-  match animal with
-    | Camel(humps) -> humps >= 2
-    | Yacc(height) -> height > 2
-//printfn "%A is %A" aCamel (good aCamel)
-
 // Interpreting
 type ArithS =
   | NumS of int
@@ -45,12 +34,26 @@ let rec subs whatC (forS : string) inC =
     | PlusC (l, r) -> PlusC (subs whatC forS l, subs whatC forS r)
     | MultC (l, r) -> MultC (subs whatC forS l, subs whatC forS r)
 
-let rec interp a fds =
+let getFundef (f:string) (fds:FunDefC list) =
+  if List.isEmpty fds then
+    failwith "No Functions passed"
+  else
+    List.tryFind (fun funElem ->
+                  match funElem with
+                    | Fdc(name, arg, expr) -> name = f) fds
+
+let rec interp a (fds : FunDefC list)  =
   match a with 
     | NumC(n) -> n
     | PlusC(l, r) -> interp l fds + interp r fds 
     | MultC(l, r) -> interp l fds * interp r fds 
-    | _ -> 0
+    | IdC(_) -> failwith "tried to interp an id"
+    | AppC (f, a) ->
+      match getFundef f fds with
+        | Some (x) ->
+          match x with
+            | Fdc(fdcName, fdcArg, fdcBody) -> interp (subs a fdcArg fdcBody) fds
+        | _ -> 0
 
 let tester (sugar, expected) =
   let wrung = interp (desugar sugar) []
