@@ -55,15 +55,22 @@ let rec interp a (fds : FunDefC list)  =
             | Fdc(fdcName, fdcArg, fdcBody) -> interp (subs a fdcArg fdcBody) fds
         | _ -> 0
 
-let tester (sugar, expected) =
+let testDesugarDown (sugar, expected) =
   let wrung = interp (desugar sugar) []
   if expected = wrung then 
     printf "."
   else printfn "%A:\nexpected: %A\n%A\n" sugar expected wrung
+
+let testInterpDown (desugared, expected, funs) =
+  let wrung = interp desugared funs 
+  if expected = wrung then 
+    printf "."
+  else printfn "%A:\nexpected: %A\n%A\n" desugared expected wrung
   
-tester(PlusS(NumS(4), NumS(5)), 9)
-tester(MinusS(NumS(4), NumS(5)), -1)
-tester(MultS(NumS(4), NumS(5)), 20)
-tester(UMinuS(NumS(4)), -4)
+testDesugarDown(PlusS(NumS(4), NumS(5)), 9)
+testDesugarDown(MinusS(NumS(4), NumS(5)), -1)
+testDesugarDown(MultS(NumS(4), NumS(5)), 20)
+testDesugarDown(UMinuS(NumS(4)), -4)
+testInterpDown(AppC("double", NumC(2)),4,[Fdc("double", "x", PlusC(IdC("x"),IdC("x")))])
 
 
