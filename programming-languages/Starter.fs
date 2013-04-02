@@ -13,19 +13,16 @@ type ExprC =
   | AppC of ExprC * ExprC
   | PlusC of ExprC * ExprC
   | MultC of ExprC * ExprC
-  | Fdc of string * string * ExprC
+  | FdC of string * string * ExprC
 
 type Value =
   | NumV of int
   | FunV of string * string * ExprC
 
-type FunDefC =
-  | Fdc of string * string * ExprC
-
 type Binding =
-  | Bind of string * int
+  | Bind of string * Value
 
-let emptyEnv() : Binding list = List.Empty
+let emptyEnv : Binding list = List.Empty
 
 let rec desugar a =
   match a with
@@ -43,11 +40,6 @@ let rec subs whatC (forS : string) inC =
     | PlusC (l, r) -> PlusC (subs whatC forS l, subs whatC forS r)
     | MultC (l, r) -> MultC (subs whatC forS l, subs whatC forS r)
 
-let getFundef (f:string) (fds:FunDefC list) =
-  List.tryFind (fun funElem ->
-                  match funElem with 
-                    | Fdc(name, arg, expr) -> name = f) fds
-
 let lookup n env =
   match List.tryFind (fun funElem ->
                   match funElem with 
@@ -55,65 +47,72 @@ let lookup n env =
     | Some(Bind(name, value)) -> value
     | _ -> failwithf "%A not found" n
 
-let rec interp a (env : Binding list) (fds : FunDefC list)  =
+
+let rec interp a (env : Binding list) : Value =
   match a with 
-    | NumC(n) -> n
-    | PlusC(l, r) -> interp l env fds + interp r env fds 
-    | MultC(l, r) -> interp l env fds * interp r env fds 
+    | NumC(n) -> NumV n
     | IdC(n) -> lookup n env
-    | Fdc(n, a, b) -> expr
+    | FdC(n, a, b) -> FunV(n, a, b)
+    | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env
+    | MultC(l, r) -> arithNum l r (fun x y -> x * y) env
     | AppC (f, a) ->
-      match getFundef f fds with
-        | Some (Fdc(fdcName, fdcArg, fdcBody)) -> 
-            let extendedEnv = Bind(fdcArg, interp a env fds) :: emptyEnv()
-            interp fdcBody extendedEnv fds
-        | _ -> 0
+      match interp f env with
+        | FunV(fdcName, funVArg, funVBody) -> 
+            let extendedEnv = Bind(funVArg, interp a env) :: emptyEnv
+            interp funVBody extendedEnv 
+        | _ -> failwith "something went wrong"
+and arithNum l r func env =
+  let lr = interp l env 
+  let rr = interp r env 
+  match lr,rr with
+    | NumV (l), NumV (r) -> NumV(func l r)
+    | _ -> failwith "Tried to arith something other than a number"
 
 let testDesugarDown (sugar, expected) =
-  let wrung = interp (desugar sugar) [] []
+  let wrung = interp (desugar sugar) []
   if expected = wrung then 
     printf "."
   else printfn "f\n%A:\nexpected: %A\n%A\n" sugar expected wrung
 
-let testInterpDownExp (desugared, env, funs) =
+let testInterpDownExp (desugared, env) =
   try 
-      let wrung = interp desugared env funs 
+      let wrung = interp desugared env 
       printfn "f\n%A:\n  expection not thrown\n" desugared
    with | Failure(msg) -> printf "." 
 
 let testInterpDown (desugared, env, funs, expected) =
-  let wrung = interp desugared env funs 
+  let wrung = interp desugared env
   if expected = wrung then 
     printf "."
   else printfn "f\n%A:\nexpected: %A\n%A\n" desugared expected wrung
   
-testDesugarDown(PlusS(NumS 4, NumS 5), 9)
-testDesugarDown(MinusS(NumS 4, NumS 5), -1)
-testDesugarDown(MultS(NumS 4, NumS 5), 20)
-testDesugarDown(UMinuS(NumS 4), -4)
-testInterpDown(AppC("double", NumC 2), emptyEnv(), 
-               [Fdc("double", "x", PlusC(IdC "x",IdC "x"))], 
-               4)
-testInterpDown(PlusC(NumC 10, AppC("const5", NumC 10)), 
-            emptyEnv(), 
-            [Fdc("const5", "_", NumC 5)],
-            15)
-
-testInterpDown(PlusC(NumC 10, AppC("double", PlusC(NumC 1, NumC 2))), 
-            emptyEnv(), 
-            [Fdc("double", "x", PlusC(IdC "x", IdC "x"))],
-            16)
-
-testInterpDown(PlusC(NumC 10, AppC("quad", PlusC(NumC 1, NumC 2))), 
-            emptyEnv(), 
-            [Fdc("quad", "x", AppC("double", AppC("double", IdC "x")))
-             Fdc("double", "x", PlusC(IdC "x", IdC "x"))],
-            22)
-
-testInterpDownExp(AppC("f1", NumC 3),
-            emptyEnv(), 
-            [Fdc("f1", "x", AppC("f2", NumC 4))
-             Fdc("f2", "y", PlusC(IdC "x", IdC "y"))])
+testDesugarDown(PlusS(NumS 4, NumS 5), NumV 9)
+testDesugarDown(MinusS(NumS 4, NumS 5), NumV -1)
+testDesugarDown(MultS(NumS 4, NumS 5), NumV 20)
+testDesugarDown(UMinuS(NumS 4), NumV -4)
+//testInterpDown(AppC("double", NumC 2), emptyEnv, 
+//               [FdC("double", "x", PlusC(IdC "x",IdC "x"))], 
+//               4)
+//testInterpDown(PlusC(NumC 10, AppC("const5", NumC 10)), 
+//            emptyEnv, 
+//            [FdC("const5", "_", NumC 5)],
+//            15)
+//
+//testInterpDown(PlusC(NumC 10, AppC("double", PlusC(NumC 1, NumC 2))), 
+//            emptyEnv, 
+//            [FdC("double", "x", PlusC(IdC "x", IdC "x"))],
+//            16)
+//
+//testInterpDown(PlusC(NumC 10, AppC("quad", PlusC(NumC 1, NumC 2))), 
+//            emptyEnv, 
+//            [FdC("quad", "x", AppC("double", AppC("double", IdC "x")))
+//             FdC("double", "x", PlusC(IdC "x", IdC "x"))],
+//            22)
+//
+//testInterpDownExp(AppC("f1", NumC 3),
+//            emptyEnv, 
+//            [FdC("f1", "x", AppC("f2", NumC 4))
+//             FdC("f2", "y", PlusC(IdC "x", IdC "y"))])
 
 printf "\n\n "
 
