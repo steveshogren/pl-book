@@ -13,13 +13,17 @@ type ExprC =
   | AppC of ExprC * ExprC
   | PlusC of ExprC * ExprC
   | MultC of ExprC * ExprC
-  | FdC of string * string * ExprC
-
+  | LamC of string * ExprC
+  | BoxC of ExprC
+  | UnBoxC of ExprC
+  | SetBoxC of ExprC * ExprC
+  | SeqC of ExprC * ExprC
+  
 type Value =
   | NumV of int
-  | FunV of string * string * ExprC
-
-type Binding =
+  | ClosV of string * ExprC * Binding list
+  | BoxV of Value
+and Binding =
   | Bind of string * Value
 
 let emptyEnv : Binding list = List.Empty
@@ -48,19 +52,26 @@ let lookup n env =
     | _ -> failwithf "%A not found" n
 
 
-let rec interp a (env : Binding list) : Value =
+let rec interp (a : ExprC) (env : Binding list) : Value =
   match a with 
     | NumC(n) -> NumV n
     | IdC(n) -> lookup n env
-    | FdC(n, a, b) -> FunV(n, a, b)
+    | LamC(a, b) -> ClosV(a, b, env)
     | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env
     | MultC(l, r) -> arithNum l r (fun x y -> x * y) env
     | AppC (f, a) ->
       match interp f env with
-        | FunV(fdcName, funVArg, funVBody) -> 
-            let extendedEnv = Bind(funVArg, interp a env) :: emptyEnv
-            interp funVBody extendedEnv 
+        | ClosV(closVArg, closVBody, closVEnv) -> 
+            let extendedEnv = Bind(closVArg, interp a env) :: closVEnv
+            interp closVBody extendedEnv 
         | _ -> failwith "something went wrong"
+    | BoxC (a) -> BoxV (interp a env)
+    | UnBoxC (a) ->
+      let BoxV(v) (interp a env)
+      v
+    | SeqC (b1, b2) ->
+      let v = interp b1 env
+      interp b2 env
 and arithNum l r func env =
   let lr = interp l env 
   let rr = interp r env 
@@ -90,22 +101,25 @@ testDesugarDown(PlusS(NumS 4, NumS 5), NumV 9)
 testDesugarDown(MinusS(NumS 4, NumS 5), NumV -1)
 testDesugarDown(MultS(NumS 4, NumS 5), NumV 20)
 testDesugarDown(UMinuS(NumS 4), NumV -4)
-testInterpDown(AppC(FdC("double", "x", PlusC(IdC "x",IdC "x")), NumC 2), 
+testInterpDown(AppC(LamC("x", PlusC(IdC "x",IdC "x")), NumC 2), 
                emptyEnv, 
                NumV 4)
-testInterpDown(PlusC(NumC 10, AppC(FdC("const5", "_", NumC 5), NumC 10)), 
+testInterpDown(PlusC(NumC 10, AppC(LamC("_", NumC 5), NumC 10)), 
             emptyEnv, 
             NumV 15)
 
-testInterpDown(PlusC(NumC 10, AppC(FdC("double", "x", PlusC(IdC "x", IdC "x")), PlusC(NumC 1, NumC 2))), 
+testInterpDown(PlusC(NumC 10, AppC(LamC("x", PlusC(IdC "x", IdC "x")), PlusC(NumC 1, NumC 2))), 
             emptyEnv, 
             NumV 16)
 
-testInterpDown(PlusC(NumC 10, AppC(FdC("quad", "x", AppC(FdC("double", "x", PlusC(IdC "x", IdC "x")), AppC(FdC("double", "x", PlusC(IdC "x", IdC "x")), IdC "x"))), PlusC(NumC 1, NumC 2))), 
+testInterpDown(PlusC(NumC 10, AppC(LamC("x", AppC(LamC( "x", PlusC(IdC "x", IdC "x")), AppC(LamC("x", PlusC(IdC "x", IdC "x")), IdC "x"))), PlusC(NumC 1, NumC 2))), 
             emptyEnv, 
             NumV 22)
+testInterpDown(AppC (LamC ("x", LamC ( "x", PlusC (IdC ("x"), IdC ("x")))), NumC 2),
+            emptyEnv, 
+            NumV 4)
 
-testInterpDownExp(AppC(FdC("f1", "x", AppC(FdC("f2", "y", PlusC(IdC "x", IdC "y")), NumC 4)), NumC 3),
+testInterpDownExp(AppC(LamC("x", AppC(LamC( "y", PlusC(IdC "x", IdC "y")), NumC 4)), NumC 3),
             emptyEnv)
 
 printf "\n\n "
