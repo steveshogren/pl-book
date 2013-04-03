@@ -80,7 +80,7 @@ let testInterpDownExp (desugared, env) =
       printfn "f\n%A:\n  expection not thrown\n" desugared
    with | Failure(msg) -> printf "." 
 
-let testInterpDown (desugared, env, funs, expected) =
+let testInterpDown (desugared, env, expected) =
   let wrung = interp desugared env
   if expected = wrung then 
     printf "."
@@ -90,29 +90,23 @@ testDesugarDown(PlusS(NumS 4, NumS 5), NumV 9)
 testDesugarDown(MinusS(NumS 4, NumS 5), NumV -1)
 testDesugarDown(MultS(NumS 4, NumS 5), NumV 20)
 testDesugarDown(UMinuS(NumS 4), NumV -4)
-//testInterpDown(AppC("double", NumC 2), emptyEnv, 
-//               [FdC("double", "x", PlusC(IdC "x",IdC "x"))], 
-//               4)
-//testInterpDown(PlusC(NumC 10, AppC("const5", NumC 10)), 
-//            emptyEnv, 
-//            [FdC("const5", "_", NumC 5)],
-//            15)
-//
-//testInterpDown(PlusC(NumC 10, AppC("double", PlusC(NumC 1, NumC 2))), 
-//            emptyEnv, 
-//            [FdC("double", "x", PlusC(IdC "x", IdC "x"))],
-//            16)
-//
-//testInterpDown(PlusC(NumC 10, AppC("quad", PlusC(NumC 1, NumC 2))), 
-//            emptyEnv, 
-//            [FdC("quad", "x", AppC("double", AppC("double", IdC "x")))
-//             FdC("double", "x", PlusC(IdC "x", IdC "x"))],
-//            22)
-//
-//testInterpDownExp(AppC("f1", NumC 3),
-//            emptyEnv, 
-//            [FdC("f1", "x", AppC("f2", NumC 4))
-//             FdC("f2", "y", PlusC(IdC "x", IdC "y"))])
+testInterpDown(AppC(FdC("double", "x", PlusC(IdC "x",IdC "x")), NumC 2), 
+               emptyEnv, 
+               NumV 4)
+testInterpDown(PlusC(NumC 10, AppC(FdC("const5", "_", NumC 5), NumC 10)), 
+            emptyEnv, 
+            NumV 15)
+
+testInterpDown(PlusC(NumC 10, AppC(FdC("double", "x", PlusC(IdC "x", IdC "x")), PlusC(NumC 1, NumC 2))), 
+            emptyEnv, 
+            NumV 16)
+
+testInterpDown(PlusC(NumC 10, AppC(FdC("quad", "x", AppC(FdC("double", "x", PlusC(IdC "x", IdC "x")), AppC(FdC("double", "x", PlusC(IdC "x", IdC "x")), IdC "x"))), PlusC(NumC 1, NumC 2))), 
+            emptyEnv, 
+            NumV 22)
+
+testInterpDownExp(AppC(FdC("f1", "x", AppC(FdC("f2", "y", PlusC(IdC "x", IdC "y")), NumC 4)), NumC 3),
+            emptyEnv)
 
 printf "\n\n "
 
