@@ -18,15 +18,31 @@ type ExprC =
   | UnBoxC of ExprC
   | SetBoxC of ExprC * ExprC
   | SeqC of ExprC * ExprC
-  
+
 type Value =
   | NumV of int
   | ClosV of string * ExprC * Binding list
-  | BoxV of Value
+  | BoxV of int
+and Storage =
+  | Cell of int * Value
 and Binding =
-  | Bind of string * Value
+  | Bind of string * int
 
 let emptyEnv : Binding list = List.Empty
+let emptyStore : Storage list = List.Empty
+
+let lookup (n : string) (env : Binding list) : int =
+  match List.tryFind (fun funElem ->
+                  match funElem with 
+                    | Bind(name, value) -> name = n) env with
+    | Some(Bind(name, value)) -> value
+    | _ -> failwithf "%A not found" n
+    
+let fetch (location : int) (store : Storage list) : Value =
+  let x = List.tryFind (fun funElem -> match funElem with | Cell (loc, value) -> loc = location) store
+  match x with
+    | Some(Cell(l, v)) -> v
+    | _ -> failwithf "%A not found" location
 
 let rec desugar a =
   match a with
@@ -35,21 +51,6 @@ let rec desugar a =
     | MinusS (l, r) -> PlusC (desugar l, (MultC(NumC(-1), desugar(r))))
     | MultS (l, r) -> MultC (desugar l, desugar r )
     | UMinuS (n) -> MultC(NumC(-1), desugar n )
-
-let rec subs whatC (forS : string) inC =
-  match inC with
-    | NumC (n) -> inC
-    | IdC (s) -> if s = forS then whatC else inC
-    | AppC (f, a) -> AppC (f, subs whatC forS a)
-    | PlusC (l, r) -> PlusC (subs whatC forS l, subs whatC forS r)
-    | MultC (l, r) -> MultC (subs whatC forS l, subs whatC forS r)
-
-let lookup n env =
-  match List.tryFind (fun funElem ->
-                  match funElem with 
-                    | Bind(name, value) -> name = n) env with
-    | Some(Bind(name, value)) -> value
-    | _ -> failwithf "%A not found" n
 
 
 let rec interp (a : ExprC) (env : Binding list) : Value =
@@ -66,9 +67,6 @@ let rec interp (a : ExprC) (env : Binding list) : Value =
             interp closVBody extendedEnv 
         | _ -> failwith "something went wrong"
     | BoxC (a) -> BoxV (interp a env)
-    | UnBoxC (a) ->
-      let BoxV(v) (interp a env)
-      v
     | SeqC (b1, b2) ->
       let v = interp b1 env
       interp b2 env
