@@ -27,6 +27,8 @@ and Storage =
   | Cell of int * Value
 and Binding =
   | Bind of string * int
+and Result =
+  | VS of Value * Store
 
 let emptyEnv : Binding list = List.Empty
 let emptyStore : Storage list = List.Empty
@@ -53,11 +55,14 @@ let rec desugar a =
     | UMinuS (n) -> MultC(NumC(-1), desugar n )
 
 
-let rec interp (a : ExprC) (env : Binding list) : Value =
+let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
   match a with 
-    | NumC(n) -> NumV n
-    | IdC(n) -> lookup n env
-    | LamC(a, b) -> ClosV(a, b, env)
+    | NumC(n) -> VS(NumV n, sto)
+    | LamC(a, b) -> VS (ClosV(a, b, env), sto)
+    | IdC(n) -> VS(fetch (lookup n env) sto, sto)
+    | SeqC (b1, b2) ->
+      let b1RS = interp b1 env sto
+      match b1RS with | VS (res, isto) -> interp b2 env isto
     | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env
     | MultC(l, r) -> arithNum l r (fun x y -> x * y) env
     | AppC (f, a) ->
@@ -67,9 +72,6 @@ let rec interp (a : ExprC) (env : Binding list) : Value =
             interp closVBody extendedEnv 
         | _ -> failwith "something went wrong"
     | BoxC (a) -> BoxV (interp a env)
-    | SeqC (b1, b2) ->
-      let v = interp b1 env
-      interp b2 env
 and arithNum l r func env =
   let lr = interp l env 
   let rr = interp r env 
