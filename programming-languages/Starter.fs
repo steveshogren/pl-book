@@ -28,10 +28,15 @@ and Storage =
 and Binding =
   | Bind of string * int
 and Result =
-  | VS of Value * Store
+  | VS of Value * Storage list
 
 let emptyEnv : Binding list = List.Empty
 let emptyStore : Storage list = List.Empty
+
+let mutable counter = 0
+let newLoc () =
+  counter <- counter + 1 
+  counter
 
 let lookup (n : string) (env : Binding list) : int =
   match List.tryFind (fun funElem ->
@@ -63,21 +68,31 @@ let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
     | SeqC (b1, b2) ->
       let b1RS = interp b1 env sto
       match b1RS with | VS (res, isto) -> interp b2 env isto
-    | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env
-    | MultC(l, r) -> arithNum l r (fun x y -> x * y) env
+    | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env sto
+    | MultC(l, r) -> arithNum l r (fun x y -> x * y) env sto
+    | BoxC (a) ->
+      match interp a env sto with
+        | VS (valueA, istore) ->
+          let wheres = newLoc()
+          VS (BoxV (wheres),  Cell (wheres, valueA) :: istore)
+    | UnBoxC (a) ->
+      match interp a env sto with
+        | VS (BoxV(loc), istore) -> VS (fetch loc istore, istore)
     | AppC (f, a) ->
       match interp f env with
         | ClosV(closVArg, closVBody, closVEnv) -> 
             let extendedEnv = Bind(closVArg, interp a env) :: closVEnv
             interp closVBody extendedEnv 
         | _ -> failwith "something went wrong"
-    | BoxC (a) -> BoxV (interp a env)
-and arithNum l r func env =
-  let lr = interp l env 
-  let rr = interp r env 
-  match lr,rr with
-    | NumV (l), NumV (r) -> NumV(func l r)
-    | _ -> failwith "Tried to arith something other than a number"
+      
+and arithNum l r func env sto =
+  let lrs = interp l env sto
+  match lrs with
+    | VS (lresult, lsto) ->  
+       let rrs = interp r env lsto
+       match lresult,rrs with
+         | NumV (l), VS (NumV (r), rsto) -> VS (NumV(func l r), rsto)
+         | _ -> failwith "Tried to arith something other than a number"
 
 let testDesugarDown (sugar, expected) =
   let wrung = interp (desugar sugar) []
