@@ -78,6 +78,12 @@ let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
     | UnBoxC (a) ->
       match interp a env sto with
         | VS (BoxV(loc), istore) -> VS (fetch loc istore, istore)
+    | SetBoxC (b, v) -> 
+      match interp b env sto with
+        | VS (BoxV(bval), bstore) ->
+          match interp v env bstore with
+            | VS (BoxV(vval), vstore) -> VS (vval, Cell(vval), vstore)
+          
     | AppC (f, a) ->
       match interp f env with
         | ClosV(closVArg, closVBody, closVEnv) -> 
