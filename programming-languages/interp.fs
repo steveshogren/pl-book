@@ -17,11 +17,11 @@ type Value =
   | ClosV of string * ExprC * Binding list //arg, body, env
   | BoxV of int // l
 and Storage =
-  | Cell of int * Value
+  | Cell of int * Value //location, Value
 and Binding =
-  | Bind of string * int
+  | Bind of string * int //name, value
 and Result =
-  | VS of Value * Storage list
+  | VS of Value * Storage list // v, s
 
 let emptyEnv : Binding list = List.Empty
 let emptyStore : Storage list = List.Empty
