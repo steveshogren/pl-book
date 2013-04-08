@@ -78,18 +78,12 @@ let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
     | UnBoxC (a) ->
       match interp a env sto with
         | VS (BoxV(loc), istore) -> VS (fetch loc istore, istore)
+        | _ -> failwith "box did not contain a box"
     | SetBoxC (b, v) -> 
       match interp b env sto with
-        | VS (BoxV(bval), bstore) ->
-          match interp v env bstore with
-            | VS (BoxV(vval), vstore) -> VS (vval, Cell(vval), vstore)
-          
-    | AppC (f, a) ->
-      match interp f env with
-        | ClosV(closVArg, closVBody, closVEnv) -> 
-            let extendedEnv = Bind(closVArg, interp a env) :: closVEnv
-            interp closVBody extendedEnv 
-        | _ -> failwith "something went wrong"
+        | VS (BoxV(vbl), sb) ->
+          match interp v env sb with
+            | VS (BoxV(vvl), sv) -> VS (BoxV(vvl), Cell(vbl, BoxV (vvl))::sv)
       
 and arithNum l r func env sto =
   let lrs = interp l env sto
