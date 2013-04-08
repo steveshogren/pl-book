@@ -20,9 +20,9 @@ type ExprC =
   | SeqC of ExprC * ExprC
 
 type Value =
-  | NumV of int
-  | ClosV of string * ExprC * Binding list
-  | BoxV of int
+  | NumV of int // n
+  | ClosV of string * ExprC * Binding list //arg, body, env
+  | BoxV of int // l
 and Storage =
   | Cell of int * Value
 and Binding =
@@ -84,6 +84,16 @@ let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
         | VS (BoxV(vbl), sb) ->
           match interp v env sb with
             | VS (BoxV(vvl), sv) -> VS (BoxV(vvl), Cell(vbl, BoxV (vvl))::sv)
+    | AppC (f, a) ->
+      match interp f env sto with
+        | VS (ClosV (farg, fbody, fenv), sf) ->
+          match interp a env sf with
+            | VS (va, sa) -> 
+              let wheres = newLoc()
+              let newstore = Cell (wheres, va) :: sa
+              let newEnv = Bind (farg, wheres) :: fenv
+              interp fbody newEnv newstore
+              
       
 and arithNum l r func env sto =
   let lrs = interp l env sto
