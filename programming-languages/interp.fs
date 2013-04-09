@@ -9,10 +9,13 @@ type ExprC =
   | LamC of string * ExprC // arg, body
   | SetC of string * ExprC // var, arg
   | SeqC of ExprC * ExprC // b1, b2
+  | ObjC of string list * ExprC list // ns, es
+  | MsgC of ExprC * string // o, n
 
 and Value =
   | NumV of int // n
   | ClosV of string * ExprC * Binding list //arg, body, env
+  | ObjV of string list * Value list // ns, vs
 
 and Storage =
   | Cell of int * Value //location, Value
@@ -70,8 +73,15 @@ let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
     | SeqC (b1, b2) ->
       let b1RS = interp b1 env sto
       match b1RS with | VS (res, isto) -> interp b2 env isto
-              
-      
+    | ObjC (ns, es) -> VS(ObjV (ns, List.map 
+        (fun e -> 
+           match interp e env sto with
+             | VS(v, s) -> v ) es), sto)
+    | MsgC (o, n) -> lookupMsg(n interp o env sto)
+and lookupMsg name objectV =
+  match objectV with
+    | ObjV (ns, vs) ->
+      for ns, vs
 and arithNum l r func env sto =
   let lrs = interp l env sto
   match lrs with
