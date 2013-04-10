@@ -73,15 +73,19 @@ let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
     | SeqC (b1, b2) ->
       let b1RS = interp b1 env sto
       match b1RS with | VS (res, isto) -> interp b2 env isto
-    | ObjC (ns, es) -> VS(ObjV (ns, List.map 
-        (fun e -> 
-           match interp e env sto with
-             | VS(v, s) -> v ) es), sto)
-    | MsgC (o, n) -> lookupMsg n interp o env sto
+    | ObjC (ns, es) ->
+      VS(ObjV (ns,
+               List.map (fun e -> match interp e env sto with | VS(v, s) -> v ) es), sto)
+    | MsgC (o, n) ->
+      let value = interp o env sto
+      lookupMsg n value
 and lookupMsg name objectV =
+  let aggro = (fun found n v -> if n = name then v::found else found )
   match objectV with
-    | ObjV (ns, vs) ->
-      for ns, vs
+    | VS(ObjV (ns, vs), sto) -> 
+       let x = List.fold2 aggro [] ns vs
+       VS(List.head x, sto)
+      
 and arithNum l r func env sto =
   let lrs = interp l env sto
   match lrs with
