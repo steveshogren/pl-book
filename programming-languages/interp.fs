@@ -77,7 +77,7 @@ let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
         (fun e -> 
            match interp e env sto with
              | VS(v, s) -> v ) es), sto)
-    | MsgC (o, n) -> lookupMsg(n interp o env sto)
+    | MsgC (o, n) -> lookupMsg n interp o env sto
 and lookupMsg name objectV =
   match objectV with
     | ObjV (ns, vs) ->
