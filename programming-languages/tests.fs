@@ -44,6 +44,10 @@ testInterpDown(PlusC(NumC 10, AppC(LamC("x", PlusC(VarC "x", VarC "x")), PlusC(N
 testInterpDown(PlusC(NumC 10, AppC(LamC("x", AppC(LamC( "x", PlusC(VarC "x", VarC "x")), AppC(LamC("x", PlusC(VarC "x", VarC "x")), VarC "x"))), PlusC(NumC 1, NumC 2))), 
             emptyEnv, 
             NumV 22)
+testInterpDown(
+               (LetS "o", ObjS (["add1", "sub1"], ))
+  emptyEnv, 
+            NumV 22)
 //testInterpDown(AppC (LamC ("x", LamC ( "x", PlusC (VarC ("x"), VarC ("x")))), NumC 2), emptyEnv, NumV 4)
 
 //testInterpDownExp(AppC(LamC("x", AppC(LamC( "y", PlusC(VarC "x", VarC "y")), NumC 4)), NumC 3), emptyEnv)
