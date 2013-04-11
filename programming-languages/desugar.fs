@@ -2,15 +2,16 @@ module desugar
 
 open interp
 
-type ArithS =
+type ExprS =
   | NumS of int
-  | PlusS of ArithS * ArithS
-  | MinusS of ArithS * ArithS
-  | MultS of ArithS * ArithS
-  | UMinuS of ArithS
+  | PlusS of ExprS * ExprS
+  | MinusS of ExprS * ExprS
+  | MultS of ExprS * ExprS
+  | UMinuS of ExprS
   | MsgS of ExprS * string * ExprS // o, n, a
   | LetS of string * ExprS * ExprS // name, bind, body
   | LamS of string * ExprS // param, body
+  | ObjS of string list * ExprS list // param, body
   | IdS of string // name
 
 let rec desugar a =
@@ -23,5 +24,6 @@ let rec desugar a =
     | MsgS(o,n,a) -> AppC(MsgC(desugar o, n), (desugar a))
     | LamS (param, body) -> LamC (param, desugar (body))
     | IdS (name) -> VarC (name)
+    | ObjS (ns, functions) -> ObjC (ns, List.map desugar functions)
     | LetS (name,bind,body) -> SeqC (SetC (name, desugar (bind)), desugar (body))
 

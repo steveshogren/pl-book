@@ -85,6 +85,7 @@ and lookupMsg name objectV =
     | VS(ObjV (ns, vs), sto) -> 
        let x = List.fold2 aggro [] ns vs
        VS(List.head x, sto)
+    | _ -> failwith "missing match"
       
 and arithNum l r func env sto =
   let lrs = interp l env sto
