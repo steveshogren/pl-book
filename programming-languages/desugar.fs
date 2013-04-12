@@ -25,5 +25,5 @@ let rec desugar a =
     | LamS (param, body) -> LamC (param, desugar (body))
     | IdS (name) -> VarC (name)
     | ObjS (ns, functions) -> ObjC (ns, List.map desugar functions)
-    | LetS (name,bind,body) -> SeqC (SetC (name, desugar (bind)), desugar (body))
+    | LetS (name,bind,body) -> AppC(LamC (name, desugar (body)), desugar (bind))
 

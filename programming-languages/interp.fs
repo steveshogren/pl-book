@@ -3,7 +3,7 @@ module interp
 type ExprC =
   | NumC of int
   | VarC of string //s 
-  | AppC of ExprC * ExprC // fun, arg
+  | AppC of ExprC * ExprC // func, arg
   | PlusC of ExprC * ExprC // l, r
   | MultC of ExprC * ExprC // l, r
   | LamC of string * ExprC // arg, body
@@ -39,32 +39,32 @@ let lookup (n : string) (env : Binding list) : int =
                   match funElem with 
                     | Bind(name, value) -> name = n) env with
     | Some(Bind(name, value)) -> value
-    | _ -> failwithf "%A not found" n
+    | _ -> failwithf "%A not found in env" n
     
 let fetch (location : int) (store : Storage list) : Value =
   let x = List.tryFind (fun funElem -> match funElem with | Cell (loc, value) -> loc = location) store
   match x with
     | Some(Cell(l, v)) -> v
-    | _ -> failwithf "%A not found" location
+    | _ -> failwithf "%A not found in sto" location
 
 
 let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
   match a with 
     | NumC(n) -> VS(NumV n, sto)
     | VarC(n) -> VS(fetch (lookup n env) sto, sto)
-    | AppC (f, a) ->
+    | AppC (f, a) -> //fun, arg
       match interp f env sto with
         | VS (ClosV (farg, fbody, fenv), sf) ->
           match interp a env sf with
             | VS (va, sa) -> 
-              let wheres = newLoc()
-              let newstore = Cell (wheres, va) :: sa
-              let newEnv = Bind (farg, wheres) :: fenv
+              let newloc = newLoc()
+              let newstore = Cell (newloc, va) :: sa
+              let newEnv = Bind (farg, newloc) :: fenv
               interp fbody newEnv newstore
         | _ -> failwith "did not try to appc a closure"
     | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env sto
     | MultC(l, r) -> arithNum l r (fun x y -> x * y) env sto
-    | LamC(a, b) -> VS (ClosV(a, b, env), sto)
+    | LamC(arg, b) -> VS (ClosV(arg, b, env), sto)
     | SetC(var, value) ->
       match interp value env sto with
         | VS(vval, sval) ->

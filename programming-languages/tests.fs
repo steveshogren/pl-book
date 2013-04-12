@@ -46,9 +46,15 @@ testInterpDown(PlusC(NumC 10, AppC(LamC("x", PlusC(VarC "x", VarC "x")), PlusC(N
 testInterpDown(PlusC(NumC 10, AppC(LamC("x", AppC(LamC( "x", PlusC(VarC "x", VarC "x")), AppC(LamC("x", PlusC(VarC "x", VarC "x")), VarC "x"))), PlusC(NumC 1, NumC 2))), 
             emptyEnv, 
             NumV 22)
+
+(* 
+            *)
 testDesugarDown(
                LetS ("o", 
-                     ObjS (["add1"; "sub1"], [LamS ("x", PlusS (IdS ("x"), NumS (1))); LamS ("x", PlusS (IdS ("x"), NumS (-1)))]),
+                     ObjS (
+                     ["add1"; "sub1"], 
+                     [LamS ("x", PlusS (IdS ("x"), NumS (1)));
+                      LamS ("x", PlusS (IdS ("x"), NumS (-1)))]),
                      MsgS(IdS ("o"), "add1", NumS (3))),
             NumV 4)
 //testInterpDown(AppC (LamC ("x", LamC ( "x", PlusC (VarC ("x"), VarC ("x")))), NumC 2), emptyEnv, NumV 4)
