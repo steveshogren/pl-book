@@ -37,7 +37,6 @@ testInterpDown(AppC(LamC("x", PlusC(VarC "x",VarC "x")), NumC 2),
 testInterpDown(PlusC(NumC 10, AppC(LamC("_", NumC 5), NumC 10)), 
             emptyEnv, 
             NumV 15)
-testInterpDown(SeqC (SetC("test", NumC 5), PlusC (NumC 5, VarC "test")), emptyEnv, NumV 10)
 
 testInterpDown(PlusC(NumC 10, AppC(LamC("x", PlusC(VarC "x", VarC "x")), PlusC(NumC 1, NumC 2))), 
             emptyEnv, 
@@ -47,8 +46,6 @@ testInterpDown(PlusC(NumC 10, AppC(LamC("x", AppC(LamC( "x", PlusC(VarC "x", Var
             emptyEnv, 
             NumV 22)
 
-(* 
-            *)
 testDesugarDown(
                LetS ("o", 
                      ObjS (
