@@ -7,10 +7,6 @@ type ExprC =
   | PlusC of ExprC * ExprC // l, r
   | MultC of ExprC * ExprC // l, r
   | LamC of string * ExprC // arg, body
-  | SetC of string * ExprC // var, arg
-  | SeqC of ExprC * ExprC // b1, b2
-  | ObjC of string list * ExprC list // ns, es
-  | MsgC of ExprC * string // o, n
 
 and Value =
   | NumV of int // n

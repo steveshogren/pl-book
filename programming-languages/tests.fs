@@ -3,26 +3,26 @@ module tests
 open interp
 open desugar
 
-let testDesugarDown (sugar, expected) =
+let testDesugarDown (sugar, expectedV) =
   try 
-    let x = interp (desugar sugar) [] [] 
-    match x with
-      | VS(actualV, _) -> 
+    let x = interp (desugar sugar) [] 
+    match x, expectedV with
+      | NumV(actualV), NumV(expected) -> 
         if expected = actualV then printf "."
         else printfn "f\n%A:\nexpected: %A\n%A\n" sugar expected actualV
    with | Failure(msg) -> printfn "%A" msg 
 
 let testInterpDownExp (desugared, env) =
   try 
-      let wrung = interp desugared env []
+      let wrung = interp desugared env
       printfn "f\n%A:\n  expection not thrown\n" desugared
    with | Failure(msg) -> printfn "%A" msg 
 
-let testInterpDown (desugared, env, expected) =
+let testInterpDown (desugared, env, expectedV) =
   try 
-    let x = interp desugared env []
-    match x with
-      | VS(actualV, _) -> 
+    let x = interp desugared env
+    match x, expectedV with
+      | NumV(actualV), NumV(expected) -> 
         if expected = actualV then printf "."
         else printfn "f\n%A:\nexpected: %A\n%A\n" desugared expected actualV
    with | Failure(msg) -> printfn "%A" msg 
@@ -46,14 +46,14 @@ testInterpDown(PlusC(NumC 10, AppC(LamC("x", AppC(LamC( "x", PlusC(VarC "x", Var
             emptyEnv, 
             NumV 22)
 
-testDesugarDown(
-               LetS ("o", 
-                     ObjS (
-                     ["add1"; "sub1"], 
-                     [LamS ("x", PlusS (IdS ("x"), NumS (1)));
-                      LamS ("x", PlusS (IdS ("x"), NumS (-1)))]),
-                     MsgS(IdS ("o"), "add1", NumS (3))),
-            NumV 4)
+//testDesugarDown(
+//               LetS ("o", 
+//                     ObjS (
+//                     ["add1"; "sub1"], 
+//                     [LamS ("x", PlusS (IdS ("x"), NumS (1)));
+//                      LamS ("x", PlusS (IdS ("x"), NumS (-1)))]),
+//                     MsgS(IdS ("o"), "add1", NumS (3))),
+//            NumV 4)
 //testInterpDown(AppC (LamC ("x", LamC ( "x", PlusC (VarC ("x"), VarC ("x")))), NumC 2), emptyEnv, NumV 4)
 
 //testInterpDownExp(AppC(LamC("x", AppC(LamC( "y", PlusC(VarC "x", VarC "y")), NumC 4)), NumC 3), emptyEnv)

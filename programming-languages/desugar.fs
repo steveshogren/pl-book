@@ -21,9 +21,9 @@ let rec desugar a =
     | MinusS (l, r) -> PlusC (desugar l, (MultC(NumC(-1), desugar(r))))
     | MultS (l, r) -> MultC (desugar l, desugar r )
     | UMinuS (n) -> MultC(NumC(-1), desugar n )
-    | MsgS(o,n,a) -> AppC(MsgC(desugar o, n), (desugar a))
+    //| MsgS(o,n,a) -> AppC(MsgC(desugar o, n), (desugar a))
     | LamS (param, body) -> LamC (param, desugar (body))
     | IdS (name) -> VarC (name)
-    | ObjS (ns, functions) -> ObjC (ns, List.map desugar functions)
+    //| ObjS (ns, functions) -> ObjC (ns, List.map desugar functions)
     | LetS (name,bind,body) -> AppC(LamC (name, desugar (body)), desugar (bind))
 
