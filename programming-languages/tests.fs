@@ -5,7 +5,7 @@ open desugar
 
 let testDesugarDown (sugar, expectedV) =
   try 
-    let x = interp (desugar sugar) [] 
+    let x = interp (desugar sugar) emptyEnv
     match x, expectedV with
       | NumV(actualV), NumV(expected) -> 
         if expected = actualV then printf "."

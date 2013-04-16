@@ -16,21 +16,22 @@ and Value =
 and Binding =
   | Bind of string * Value //name, value
 
-let emptyEnv : Binding list = List.Empty
+let emptyEnv = (fun name -> failwith "name not found")
+let lookup (n : string) e : Value = e n 
+let extendEnv (b : Binding) e  : (string->Value) =
+  (fun name ->
+   match b with
+     | Bind (bname, bvalue) ->
+       if name = bname then bvalue
+       else lookup name e)
 
 let mutable counter = 0
 let newLoc () =
   counter <- counter + 1 
   counter
 
-let lookup (n : string) (env : Binding list) : Value =
-  match List.tryFind (fun funElem ->
-                  match funElem with 
-                    | Bind(name, value) -> name = n) env with
-    | Some(Bind(name, value)) -> value
-    | _ -> failwithf "%A not found in env" n
     
-let rec interp (a : ExprC) (env : Binding list) : Value =
+let rec interp (a : ExprC) (env : (string->Value)) : Value =
   match a with 
     | NumC(n) -> NumV n
     | VarC(n) -> lookup n env
@@ -41,7 +42,8 @@ let rec interp (a : ExprC) (env : Binding list) : Value =
     | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env
     | MultC(l, r) -> arithNum l r (fun x y -> x * y) env
     | LamC(arg, b) -> ClosV(fun (argval) ->
-                            let newenv = Bind(arg, argval)::env
+                            let bound = Bind(arg, argval)
+                            let newenv = extendEnv bound env
                             interp b newenv)
 and arithNum lo ro func env =
   let lrs = interp lo env
