@@ -14,87 +14,45 @@ type ExprC =
 
 and Value =
   | NumV of int // n
-  | ClosV of string * ExprC * Binding list //arg, body, env
+  | ClosV of (Value -> Value)
   | ObjV of string list * Value list // ns, vs
 
-and Storage =
-  | Cell of int * Value //location, Value
-
 and Binding =
-  | Bind of string * int //name, value
-
-and Result =
-  | VS of Value * Storage list // v, s
+  | Bind of string * Value //name, value
 
 let emptyEnv : Binding list = List.Empty
-let emptyStore : Storage list = List.Empty
 
 let mutable counter = 0
 let newLoc () =
   counter <- counter + 1 
   counter
 
-let lookup (n : string) (env : Binding list) : int =
+let lookup (n : string) (env : Binding list) : Value =
   match List.tryFind (fun funElem ->
                   match funElem with 
                     | Bind(name, value) -> name = n) env with
     | Some(Bind(name, value)) -> value
     | _ -> failwithf "%A not found in env" n
     
-let fetch (location : int) (store : Storage list) : Value =
-  let x = List.tryFind (fun funElem -> match funElem with | Cell (loc, value) -> loc = location) store
-  match x with
-    | Some(Cell(l, v)) -> v
-    | _ -> failwithf "%A not found in sto" location
-
-
-let rec interp (a : ExprC) (env : Binding list) (sto : Storage list): Result =
+let rec interp (a : ExprC) (env : Binding list) : Value =
   match a with 
-    | NumC(n) -> VS(NumV n, sto)
-    | VarC(n) -> VS(fetch (lookup n env) sto, sto)
+    | NumC(n) -> NumV n
+    | VarC(n) -> lookup n env
     | AppC (f, a) -> //fun, arg
-      match interp f env sto with
-        | VS (ClosV (farg, fbody, fenv), sf) ->
-          match interp a env sf with
-            | VS (va, sa) -> 
-              let newloc = newLoc()
-              let newstore = Cell (newloc, va) :: sa
-              let newEnv = Bind (farg, newloc) :: fenv
-              interp fbody newEnv newstore
-        | _ -> failwith "did not try to appc a closure"
-    | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env sto
-    | MultC(l, r) -> arithNum l r (fun x y -> x * y) env sto
-    | LamC(arg, b) -> VS (ClosV(arg, b, env), sto)
-    | SetC(var, value) ->
-      match interp value env sto with
-        | VS(vval, sval) ->
-          let wheres = lookup var env
-          VS(vval, Cell(wheres, vval) :: sval)
-    | SeqC (b1, b2) ->
-      let b1RS = interp b1 env sto
-      match b1RS with | VS (res, isto) -> interp b2 env isto
-    | ObjC (ns, es) ->
-      VS(ObjV (ns,
-               List.map (fun e -> match interp e env sto with | VS(v, s) -> v ) es), sto)
-    | MsgC (o, n) ->
-      let value = interp o env sto
-      lookupMsg n value
-and lookupMsg name objectV =
-  let aggro = (fun found n v -> if n = name then v::found else found )
-  match objectV with
-    | VS(ObjV (ns, vs), sto) -> 
-       let x = List.fold2 aggro [] ns vs
-       VS(List.head x, sto)
-    | _ -> failwith "missing match"
-      
-and arithNum l r func env sto =
-  let lrs = interp l env sto
-  match lrs with
-    | VS (lresult, lsto) ->  
-       let rrs = interp r env lsto
-       match lresult,rrs with
-         | NumV (l), VS (NumV (r), rsto) -> VS (NumV(func l r), rsto)
-         | _ -> failwith "Tried to arith something other than a number"
+      let avalue = interp a env
+      match interp f env with
+        | ClosV (closvf) -> closvf avalue
+    | PlusC(l, r) -> arithNum l r (fun x y -> x + y) env
+    | MultC(l, r) -> arithNum l r (fun x y -> x * y) env
+    | LamC(arg, b) -> ClosV(fun (argval) ->
+                            let newenv = Bind(arg, argval)::env
+                            interp b newenv)
+and arithNum lo ro func env =
+  let lrs = interp lo env
+  let rrs = interp ro env
+  match lrs,rrs with
+    | NumV (l), NumV (r) -> NumV(func l r)
+    | _ -> failwith "Tried to arith something other than a number"
 
 
 
