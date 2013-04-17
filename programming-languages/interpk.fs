@@ -1,4 +1,4 @@
-module interp
+module interpk
 
 type ExprC =
   | NumC of int
@@ -10,8 +10,7 @@ type ExprC =
 
 and Value =
   | NumV of int // n
-  | ClosV of (Value -> Value)
-  | ObjV of string list * Value list // ns, vs
+  | ClosV of (Value * (Value -> Value) -> Value)
 
 and Binding =
   | Bind of string * Value //name, value
@@ -37,11 +36,7 @@ let rec interp (a : ExprC) (env : (string->Value))  : Value =
     | PlusC(l, r) -> arithNum l r ( + ) env 
     | MultC(l, r) -> arithNum l r ( * ) env
     | AppC (f, a) -> //fun, arg
-      let avalue = interpk f env
-        (fun fv -> interpk a env
-           (fun av ->
-              match fv with
-                | ClosC (closvf) -> closvf av k))
+      let avalue = interp a env
       match interp f env with
         | ClosV (closvf) -> closvf avalue
     | LamC(arg, b) -> ClosV(fun (argval) ->
@@ -54,4 +49,34 @@ and arithNum lo ro func env =
   match lrs,rrs with
     | NumV (l), NumV (r) -> NumV(func l r)
     | _ -> failwith "Tried to arith something other than a number"
+
+let valArith l r func =
+  match l,r with
+    | NumV (l), NumV (r) -> NumV(func l r)
+    | _ -> failwith "Tried to arith something other than a number"
+  
+
+let rec interpk (a : ExprC) (env : (string->Value)) (k : (Value -> Value)) : Value =
+  match a with 
+    | NumC(n) -> NumV n |> k
+    | VarC(n) -> lookup n env |> k
+    | PlusC(l, r) -> arithNumk l r ( + ) env k
+    | MultC(l, r) -> arithNumk l r ( * ) env k
+    | AppC (f, a) -> //fun, arg
+      let avalue = interp a env
+      match interp f env with
+        | ClosV (closvf) -> closvf avalue
+    | LamC(arg, b) -> ClosV(fun (argval) ->
+                            let bound = Bind(arg, argval)
+                            let newenv = extendEnv bound env
+                            interp b newenv)
+and arithNumk lo ro func env k =
+  interpk lo env
+    (fun lv ->
+     interpk ro env (fun rv ->
+        let res = valArith lv rv func
+        k res))
+
+
+
 
