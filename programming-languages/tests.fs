@@ -1,6 +1,7 @@
 module tests
 
-open interp
+open interpk
+//open interp
 open desugar
 
 let testDesugarDown (sugar, expectedV) =

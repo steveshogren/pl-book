@@ -10,7 +10,7 @@ type ExprC =
 
 and Value =
   | NumV of int // n
-  | ClosV of (Value * (Value -> Value) -> Value)
+  | ClosV of (Value (Value -> Value) -> Value)
 
 and Binding =
   | Bind of string * Value //name, value
@@ -28,27 +28,6 @@ let mutable counter = 0
 let newLoc () =
   counter <- counter + 1 
   counter
-    
-let rec interp (a : ExprC) (env : (string->Value))  : Value =
-  match a with 
-    | NumC(n) -> NumV n
-    | VarC(n) -> lookup n env
-    | PlusC(l, r) -> arithNum l r ( + ) env 
-    | MultC(l, r) -> arithNum l r ( * ) env
-    | AppC (f, a) -> //fun, arg
-      let avalue = interp a env
-      match interp f env with
-        | ClosV (closvf) -> closvf avalue
-    | LamC(arg, b) -> ClosV(fun (argval) ->
-                            let bound = Bind(arg, argval)
-                            let newenv = extendEnv bound env
-                            interp b newenv)
-and arithNum lo ro func env =
-  let lrs = interp lo env
-  let rrs = interp ro env
-  match lrs,rrs with
-    | NumV (l), NumV (r) -> NumV(func l r)
-    | _ -> failwith "Tried to arith something other than a number"
 
 let valArith l r func =
   match l,r with
@@ -63,13 +42,13 @@ let rec interpk (a : ExprC) (env : (string->Value)) (k : (Value -> Value)) : Val
     | PlusC(l, r) -> arithNumk l r ( + ) env k
     | MultC(l, r) -> arithNumk l r ( * ) env k
     | AppC (f, a) -> //fun, arg
-      let avalue = interp a env
-      match interp f env with
-        | ClosV (closvf) -> closvf avalue
-    | LamC(arg, b) -> ClosV(fun (argval) ->
+      interpk f env (fun (fv) ->
+                       interpk a env (fun (av) ->
+                                        match fv with | ClosV(farg) -> farg av k))
+    | LamC(arg, b) -> k ClosV(fun (argval dynk) ->
                             let bound = Bind(arg, argval)
                             let newenv = extendEnv bound env
-                            interp b newenv)
+                            interpk b newenv dynk)
 and arithNumk lo ro func env k =
   interpk lo env
     (fun lv ->
@@ -77,6 +56,7 @@ and arithNumk lo ro func env k =
         let res = valArith lv rv func
         k res))
 
-
+let rec interp (expr : ExprC) b c : Value =
+  interpk expr emptyEnv (fun (ans) -> ans)
 
 

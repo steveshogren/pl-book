@@ -39,8 +39,8 @@
   <ItemGroup>
     <Compile Include="interp.fs" />
     <Compile Include="desugar.fs" />
-    <Compile Include="tests.fs" />
     <Compile Include="interpk.fs" />
+    <Compile Include="tests.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
 </Project>
