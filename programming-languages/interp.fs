@@ -1,17 +1,31 @@
 module interp
 
-type ExprC =
+//type ExprC =
+//  | NumC of int
+//  | VarC of string //s 
+//  | AppC of ExprC * ExprC // func, arg
+//  | PlusC of ExprC * ExprC // l, r
+//  | MultC of ExprC * ExprC // l, r
+//  | LamC of string * ExprC // arg, body
+type TypeE =
+  | NumT
+  | FunT of TypeE * TypeE
+
+type TyExprC =
   | NumC of int
   | VarC of string //s 
-  | AppC of ExprC * ExprC // func, arg
-  | PlusC of ExprC * ExprC // l, r
-  | MultC of ExprC * ExprC // l, r
-  | LamC of string * ExprC // arg, body
+  | AppC of TyExprC * TyExprC // func, arg
+  | PlusC of TyExprC * TyExprC // l, r
+  | MultC of TyExprC * TyExprC // l, r
+  | LamC of string * TypeE * TypeE * TyExprC // arg, body
 
+//and Value =
+//  | NumV of int // n
+//  | ClosV of (Value -> Value)
+//  | ObjV of string list * Value list // ns, vs
 and Value =
   | NumV of int // n
-  | ClosV of (Value -> Value)
-  | ObjV of string list * Value list // ns, vs
+  | ClosV of string * TyExprC * Env
 
 and Binding =
   | Bind of string * Value //name, value
