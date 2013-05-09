@@ -43,6 +43,22 @@ let mutable counter = 0
 let newLoc () =
   counter <- counter + 1 
   counter
+let tc (expr : TyExprC) (tenv : TyEnv) : TypeE =
+  match expr with
+    | NumC (n) -> NumT
+    | IdC (n) -> lookup n tenv
+    | PlusC (l, r) ->
+      let lt = tc l tenv
+      let rt = tc r tenv
+      if lt = NumT && rl = NumT then
+        NumT
+      else failwith "tc both not numbers in add"
+    | MultC (l, r) -> 
+      let lt = tc l tenv
+      let rt = tc r tenv
+      if lt = NumT && rl = NumT then
+        NumT
+      else failwith "tc both not numbers in add"
     
 let rec interp (a : ExprC) (env : (string->Value))  : Value =
   match a with 
